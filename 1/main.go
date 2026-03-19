@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 )
 
 func dirTree(out io.Writer, path string, printFiles bool) error {
+	return printDir(out, path, printFiles, "")
+}
+
+func printDir(out io.Writer, path string, printFiles bool, prefix string) error {
 	content, err := os.ReadDir(path)
 	if err != nil {
 		return errors.New("invalid path")
@@ -27,11 +32,14 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 	})
 
 	for i, entry := range entries {
+		var nextPrefix string
 
 		if i == len(entries)-1 {
-			fmt.Fprint(out, "└───", entry.Name())
+			fmt.Fprint(out, prefix, "└───", entry.Name())
+			nextPrefix = prefix + "\t"
 		} else {
-			fmt.Fprint(out, "├───", entry.Name())
+			fmt.Fprint(out, prefix, "├───", entry.Name())
+			nextPrefix = prefix + "│\t"
 		}
 
 		if !entry.IsDir() {
@@ -45,6 +53,11 @@ func dirTree(out io.Writer, path string, printFiles bool) error {
 			} else {
 				fmt.Fprintf(out, " (%db)\n", size)
 			}
+		}
+
+		if entry.IsDir() {
+			fmt.Fprint(out, "\n")
+			printDir(out, filepath.Join(path, entry.Name()), printFiles, nextPrefix)
 		}
 	}
 
